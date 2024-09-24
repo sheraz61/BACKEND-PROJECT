@@ -51,5 +51,10 @@ app.use(express.static("public"))
 // Parse cookies in incoming requests
 app.use(cookieParser())
 
+//routes
+import userRouter from './routes/user.routes.js'
+
+//routes decaleration
+app.use('/api/v1/users',userRouter)
 // Export the configured Express application
 export { app } 
