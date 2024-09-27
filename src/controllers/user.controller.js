@@ -20,7 +20,7 @@ const registerUser= asyncHandler(async (req,res)=>{
 //   }
 
   //check if user already exists : username and email
-const existedUser=User.findOne({
+const existedUser=await User.findOne({
     //option to check feild if user already exists
     $or:[
         {email},{username}
@@ -30,10 +30,16 @@ if(existedUser){
     throw new apiError(409,'User already exists')
 }
 
+// console.log(req.files);
 
   //check if avatar exists : avatar ,check if cover image exists : cover
   const avatarLocalPath=req.files?.avatar[0]?.path;
-const coverImagePath=req.files?.coverimage[0]?.path;
+// const coverImagePath=req.files?.coverimage[0]?.path;
+//2nd way to check cover image if null value then handle the conditon  
+let coverImagePath; 
+if(req.files && Array.isArray(req.files.coverimage) && req.files.coverimage.length>0){
+coverImagePath=req.files.coverimage[0].path;
+}
 if(!avatarLocalPath){
 throw new apiError(400,'Avatar not found')
 }
