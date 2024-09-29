@@ -92,7 +92,10 @@ const loginUser = asyncHandler(async (req, res) => {
   //req.body-->data
   const { email, password, username } = req.body;
   //username or email to login
-  if (!(username || email)) {
+  // if (!(username || email)) {
+  //   throw new apiError(400, 'Email or username is required')
+  // }
+  if (!username && !email) {
     throw new apiError(400, 'Email or username is required')
   }
   //find user
@@ -149,7 +152,7 @@ const logoutUser = asyncHandler(async (req, res) => {
   }
   return res.status(200)
     .clearCookie("accessToken", options)
-    .clearCookie("refreshtoken", options)
+    .clearCookie("refreshToken", options)
     .json(new apiResponse(200, {}, "User logged out successfully"))
 })
 

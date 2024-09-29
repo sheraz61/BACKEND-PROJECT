@@ -1,24 +1,51 @@
-import { User } from "../models/user.models";
-import { apiError } from "../utils/apiError";
-import asyncHandler from "../utils/asyncHandler";
+import { User } from "../models/user.models.js";
+import { apiError } from "../utils/apiError.js";
+import asyncHandler from "../utils/asyncHandler.js";
 import jwt from "jsonwebtoken"
 
-export const verifyJWT = asyncHandler(async (req, _, next) => {
+// export const verifyJWT = asyncHandler(async (req, _, next) => {
+//     try {
+//         const response = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "")
+//         if (!response) {
+//             throw new apiError(401, "Unauthorized request")
+//         }
+//         const decodedToken = jwt.verify(response, process.env.ACCESS_TOKEN_SECRET)
+//         const user = await User.findById(decodedToken?._id).select("-password -refreshtoken")
+
+//         if (!user) {
+//             throw new apiError(401, "invalid access token")
+//         }
+
+//         req.user = user;
+//         next()
+//     } catch (error) {
+//         throw new apiError(401, "Error: Invalid access token")
+//     }
+// })
+
+
+export const verifyJWT = asyncHandler(async(req, _, next) => {
     try {
-        const response = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "")
+        const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "")
+        
+        // console.log(token);
         if (!token) {
             throw new apiError(401, "Unauthorized request")
         }
+    
         const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
-        const user = await User.findById(decodedToken?._id).select("-password -refreshtoken")
-
+    
+        const user = await User.findById(decodedToken?._id).select("-password -refreshToken")
+    
         if (!user) {
-            throw new apiError(401, "invalid access token")
+            
+            throw new apiError(401, "Invalid Access Token")
         }
-
+    
         req.user = user;
         next()
     } catch (error) {
-        throw new apiError(401, "Invalid access token")
+        throw new apiError(401, error?.message || "Invalid access token")
     }
+    
 })
