@@ -2,7 +2,7 @@ import asyncHandler from '../utils/asyncHandler.js'
 import { apiError } from '../utils/apiError.js'
 import { apiResponse } from '../utils/apiResponse.js'
 import { User } from '../models/user.models.js'
-import { uploadOnCloudinary } from '../utils//cloudinary.js'
+import { deleteInCloudinary, uploadOnCloudinary } from '../utils//cloudinary.js'
 import jwt from 'jsonwebtoken'
 
 const generateAccessAndRefreshToken = async (userId) => {
@@ -260,6 +260,15 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
   if (!avatarLocalPath) {
     throw new apiError(400, 'Avatar not found')
   }
+
+  const userForAvatar = await User.findById(req.user?._id)
+  if (!userForAvatar) {
+    throw new apiError(400, "No user found")
+  }
+  const oldAvatar = await deleteInCloudinary(userForAvatar.avatar)
+  if (!oldAvatar) {
+    throw new apiError(400, "Error while deleting avatar")
+  }
   const avatar = await uploadOnCloudinary(avatarLocalPath)
   if (!avatar.url) {
     throw new apiError(400, 'Error while uploading Avatar ')
@@ -285,6 +294,18 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
   if (!coverImageLocalPath) {
     throw new apiError(400, 'Cover Image not found')
   }
+
+  const userForCoverImage = await User.findById(req.user?._id)
+  if (!userForCoverImage) {
+    throw new apiErrorpiError(400, "No user Found")
+  }
+
+  const oldCoverImage = await deleteInCloudinary(userForCoverImage.coverImage)
+
+  if (!oldCoverImage) {
+    throw new apiError(400, "Error while deleting old file of CoverImage")
+  }
+
   const coverimage = await uploadOnCloudinary(coverImageLocalPath)
   if (!coverimage.url) {
     throw new apiError(400, 'Error while uploading cover Image ')
@@ -325,7 +346,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
       }
     },
     {
-      $lookup:{
+      $lookup: {
         from: "subscriptions",
         localField: "_id",
         foreignField: "subscriber",
@@ -333,81 +354,81 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
       }
     },
     {
-      $addFields:{
-        subscriberCount:{
-          $size:"$subscribers"
+      $addFields: {
+        subscriberCount: {
+          $size: "$subscribers"
         },
-        channelSubscribedToCount:{
-          $size:"$subscribedTo"
+        channelSubscribedToCount: {
+          $size: "$subscribedTo"
         },
-        isSubscribed:{
-          $cond:{
-            if:{$in:[req.user?._id,"$subscribers.subscriber"]},
-            then:true,
-            else:false
+        isSubscribed: {
+          $cond: {
+            if: { $in: [req.user?._id, "$subscribers.subscriber"] },
+            then: true,
+            else: false
           }
         }
       }
     },
     {
-      $project:{
-        fullname:1,
-        username:1,
-        avatar:1,
-        coverimage:1,
-        subscriberCount:1,
-        channelSubscribedToCount:1,
-        isSubscribed:1,
-        email:1,
+      $project: {
+        fullname: 1,
+        username: 1,
+        avatar: 1,
+        coverimage: 1,
+        subscriberCount: 1,
+        channelSubscribedToCount: 1,
+        isSubscribed: 1,
+        email: 1,
 
       }
     }
   ])
-  if(!channel?.length){
-throw new apiError (404,"channel does not exist")
+  if (!channel?.length) {
+    throw new apiError(404, "channel does not exist")
   }
 
   return res.status(200)
-  .json(
-    new apiResponse(200,channel[0],"User channel fetched successfully")
-  )
+    .json(
+      new apiResponse(200, channel[0], "User channel fetched successfully")
+    )
 })
 
-const getWatchHistory= asyncHandler(async(req,res)=>{
+const getWatchHistory = asyncHandler(async (req, res) => {
   const user = await User.aggregate([
     {
-      $match:{
+      $match: {
         _id: new mongoose.types.ObjectId(req.user._id)
       }
     },
     {
-      $lookup:{
-        from:"Vedio",
-        localField:"watchhistory",
-        foreignField:"_id",
-        as:"watchhistory",
-        pipeline:[
+      $lookup: {
+        from: "Vedio",
+        localField: "watchhistory",
+        foreignField: "_id",
+        as: "watchhistory",
+        pipeline: [
           {
-            $lookup:{
-              from:"User",
-              localField:"owner",
-              foreignField:"_id",
-              as:"owner",
-              pipeline:[
+            $lookup: {
+              from: "User",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline: [
                 {
-                  $project:{
-                    fullname:1,
-                    username:1,
-                    avatar:1
+                  $project: {
+                    fullname: 1,
+                    username: 1,
+                    avatar: 1
                   }
                 }
               ]
             }
           },
           {
-            $addFields:{
-              owner:{
-                $first:"owner"
+            $addFields: {
+              owner: {
+                $first: "owner"
               }
             }
           }
@@ -416,9 +437,9 @@ const getWatchHistory= asyncHandler(async(req,res)=>{
     }
   ])
   return res.status(200)
-  .json(
-    new apiResponse(200,user[0].watchhistory,"User watch history fetched successfully")
-  )
+    .json(
+      new apiResponse(200, user[0].watchhistory, "User watch history fetched successfully")
+    )
 })
 export {
   registerUser,
